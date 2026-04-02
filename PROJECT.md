@@ -12,7 +12,7 @@ The event is **Big Stick Shindig 2026 (BSS'26)**.
 
 - Worker is **live and syncing** — tickets only, every 5 minutes, incremental via cursor
 - Syncing against **`{{API TEST}}`** table — not yet switched to production `BSS'26`
-- **900 records** fully backfilled with all SP fields including transferer data
+- **900 records** fully backfilled with all SP fields including transferer data — no duplicates
 - GitHub auto-deploy is configured — push to `main` = deployed
 - Manual sync via Airtable button automation is working
 - Main next step: **switch to production table** (`BSS'26`) when ready
@@ -283,12 +283,12 @@ SP has **1,191 tickets** and **10,271 invitations** as of April 2026.
 
 ## Still To Do
 
-- [ ] **Clean up ~151 duplicate records** in `{{API TEST}}` — leftover from the bad first sync. Identify by finding records with duplicate SP IDs and delete the extras manually in Airtable
-- [ ] **Delete old cursor-only row** in `{{Sync State}}` — has `Endpoint` + `Cursor` but no `Status`/`Synced At`. Leftover from before logging refactor
+- [x] **Duplicate records** — verified clean as of April 2026. 900 records, all SP IDs unique, none blank.
+- [x] **Delete old cursor-only row** in `{{Sync State}}` — done
+- [x] **Remove `Record Type` field** from `{{Sync State}}` — done
 - [ ] **Map `Promo Code`** — change field type from `multipleSelects` → `singleLineText` in Airtable, then add `promotion_code` to `FIELD_MAP.tickets` in `src/config.js` and redeploy
 - [ ] **Switch to production table** — change `TABLES.tickets` in `src/config.js` from `{{API TEST}}` to `BSS'26` (`tblVGGdO9QrRYi50x`), run `node src/backfill.js --table "BSS'26" --dry-run` then live, redeploy worker
 - [ ] **Re-enable invitations sync** — currently disabled in `runSync()`. May need Cloudflare paid plan ($5/mo, raises limit to 1000 subrequests)
-- [ ] **Remove `Record Type` field** from `{{Sync State}}` — no longer written, just clutter
 - [ ] **Compare SP transferer fields vs existing `Transfer From Name` / `Transferred From Email`** fields in Airtable — once data looks good in the SP* fields, decide whether to map directly or keep separate
 
 ---
