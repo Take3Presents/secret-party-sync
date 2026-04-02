@@ -1,0 +1,6 @@
+# Local development secrets — copy to .dev.vars (never commit .dev.vars)
+# Wrangler uses this file when running `npm run dev`
+
+SECRET_PARTY_API_KEY=your_secret_party_api_key_here
+AIRTABLE_API_KEY=pat_your_airtable_token_here
+WEBHOOK_SECRET=pick_any_random_string_here

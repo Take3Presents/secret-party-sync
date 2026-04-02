@@ -1,0 +1,14 @@
+name = "secret-party-sync"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Secrets are set via: wrangler secret put SECRET_NAME
+# Do NOT put real values here — this file is committed to git
+# Required secrets:
+#   SECRET_PARTY_API_KEY   — your Secret Party API key
+#   AIRTABLE_API_KEY       — your Airtable personal access token
+#   WEBHOOK_SECRET         — a random string to secure the manual sync endpoint
