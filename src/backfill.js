@@ -159,10 +159,11 @@ console.log(`Mode         : ${dryRun ? 'DRY RUN (no writes)' : 'LIVE'}`);
 console.log('='.repeat(60));
 
 console.log('\nFetching all SP tickets...');
-const spTickets = await fetchAllSP('tickets', SP_API_KEY);
+const allSpTickets = await fetchAllSP('tickets', SP_API_KEY);
+const spTickets = allSpTickets.filter((r) => r.product?.type === 'ticket');
 const ticketByCode = new Map(spTickets.map((r) => [r.code, r]));
 const ticketById   = new Map(spTickets.map((r) => [String(r.id), r]));
-console.log(`  ${spTickets.length} tickets from SP`);
+console.log(`  ${spTickets.length} tickets from SP (${allSpTickets.length - spTickets.length} add-ons excluded)`);
 
 console.log(`\nFetching all Airtable records from "${targetTable}"...`);
 const baseId = BASES.tickets;

@@ -79,12 +79,17 @@ async function syncEndpoint(type, spApiKey, airtableApiKey, triggeredBy) {
       ? records.filter((r) => r.updated_at > cursor)
       : records;
 
-    fetched = genuineRecords.length;
+    // For tickets, skip add-ons — we only want product.type === 'ticket'
+    const filteredRecords = type === 'tickets'
+      ? genuineRecords.filter((r) => r.product?.type === 'ticket')
+      : genuineRecords;
+
+    fetched = filteredRecords.length;
     console.log(`[${type}] genuine records after cursor filter: ${fetched} (SP returned ${records.length})`);
 
     // 5. Upsert into Airtable
-    if (genuineRecords.length > 0) {
-      const airtableRecords = genuineRecords.map((r) => mapRecord(r, type));
+    if (filteredRecords.length > 0) {
+      const airtableRecords = filteredRecords.map((r) => mapRecord(r, type));
       const result = await upsertRecords(
         airtableApiKey,
         BASES[type],
