@@ -102,7 +102,11 @@ function mapSpRecord(spRecord) {
       ? spField.split('.').reduce((obj, key) => obj?.[key], spRecord)
       : spRecord[spField];
     if (value !== undefined && value !== null) {
-      fields[airtableField] = value;
+      if (typeof value === 'object') {
+        fields[airtableField] = JSON.stringify(value, null, 2);
+      } else {
+        fields[airtableField] = value;
+      }
     }
   }
   return fields;
