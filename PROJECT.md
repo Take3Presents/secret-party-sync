@@ -10,12 +10,13 @@ The event is **Big Stick Shindig 2026 (BSS'26)**.
 
 ## Current State (as of April 2026)
 
-- Worker is **live and syncing** — tickets only, every 5 minutes, incremental via cursor
-- Syncing against **`{{API TEST}}`** table — not yet switched to production `BSS'26`
-- **900 records** fully backfilled with all SP fields including transferer data — no duplicates
+- Worker is **live and syncing** — tickets + invitations, every 5 minutes, incremental via cursor
+- Tickets syncing against **`{{API TEST}}`** table — not yet switched to production `BSS'26`
+- Invitations syncing into **`Current Invite List`** — 10,272 records backfilled, incremental sync active
+- All SP fields mapped for both endpoints (objects/arrays stored as JSON in long text fields)
 - GitHub auto-deploy is configured — push to `main` = deployed
 - Manual sync via Airtable button automation is working
-- Main next step: **switch to production table** (`BSS'26`) when ready
+- Main next step: **switch tickets to production table** (`BSS'26`) when ready
 
 ---
 
@@ -100,20 +101,19 @@ Every sync run (cron or manual) creates a new row here. This is pure append-only
 
 This is a copy of the real `BSS'26` table used for testing the sync before going to production. It has all the same SP fields. The merge/dedup key is `SP ID` — a plain text field. Airtable's native `performUpsert` matches on this field to create or update.
 
-**SP fields currently mapped** (see `src/config.js` for full FIELD_MAP):
-- `SP ID`, `Ticket Code`, `Invitation Code`
+**All SP fields are now mapped** (see `src/config.js` for full FIELD_MAP and the SP API Reference section for the complete field table):
+- `SP ID`, `Ticket Code`, `Invitation Code`, `SP Invitation ID`
 - `First Name`, `Last Name`, `Email from SP`, `Phone`
 - `SP Stage`, `SP Status`, `SP Invites Per`
-- `SP Purchase Price`, `SP Total`
+- `SP Purchase Price`, `SP Surcharge Fee`, `SP Service Fee`, `SP Processing Fee`, `SP Total`
+- `SP Transfer Fee`, `SP Transfer Requires Payment`, `SP Transfer Status`
+- `SP Transferee First Name/Last Name/Email`, `SP Transferer First Name/Last Name/Email`
+- `SP Sales Organizer Revenue`, `SP Total Unlocked By Count`
 - `SP Is Checked In`, `SP Checkin At`
-- `SP Transfer Status`, `SP Transferee First Name`, `SP Transferee Last Name`, `SP Transferee Email`
-- `SP Transferer First Name`, `SP Transferer Last Name`, `SP Transferer Email` ← new fields created in Airtable, backfilled April 2026
+- `SP Promo Code`
 - `SP Created At`, `SP Updated At`
-- `SP Product Name` (nested: `product.name`)
-- `SP Invitation ID`
-
-**SP fields NOT yet mapped** (in SP API but not written to Airtable):
-- `promotion_code` → `Promo Code` field exists in Airtable but is `multipleSelects` type — needs to be changed to `singleLineText` first, then add to FIELD_MAP
+- `SP Product Name`, `SP Product Type`, `SP Product Transfer Allowed` (nested: `product.*`)
+- `SP Invitation` (full nested invitation object stored as JSON)
 
 **Existing Airtable fields that may overlap with SP transferer fields** (to review before prod):
 - `Transfer From Name` — currently unmapped. May want to point `transferer_first_name` + `transferer_last_name` here once data is verified
@@ -129,7 +129,7 @@ This is a copy of the real `BSS'26` table used for testing the sync before going
 - All other routes return 404
 
 ### Core flow (`src/sync.js`)
-1. `runSync()` calls `syncEndpoint('tickets', ...)` — invitations disabled for now
+1. `runSync()` calls `syncEndpoint('invitations', ...)` then `syncEndpoint('tickets', ...)` sequentially
 2. `syncEndpoint()`:
    - Reads cursor from most recent `{{Sync State}}` row via `getCursor()`
    - Fetches records from SP API with `updated_after=cursor` (null = full sync)
@@ -352,9 +352,9 @@ SP has **1,191 tickets** and **10,272 invitations** as of April 2026.
 - [x] **Duplicate records** — verified clean as of April 2026. 900 records, all SP IDs unique, none blank.
 - [x] **Delete old cursor-only row** in `{{Sync State}}` — done
 - [x] **Remove `Record Type` field** from `{{Sync State}}` — done
-- [ ] **Map `Promo Code`** — change field type from `multipleSelects` → `singleLineText` in Airtable, then add `promotion_code` to `FIELD_MAP.tickets` in `src/config.js` and redeploy
-- [ ] **Switch to production table** — change `TABLES.tickets` in `src/config.js` from `{{API TEST}}` to `BSS'26` (`tblVGGdO9QrRYi50x`), run `node src/backfill.js --table "BSS'26" --dry-run` then live, redeploy worker
-- [ ] **Re-enable invitations sync** — currently disabled in `runSync()`. May need Cloudflare paid plan ($5/mo, raises limit to 1000 subrequests)
+- [x] **Map `Promo Code`** — created `SP Promo Code` as singleLineText, mapped in FIELD_MAP
+- [x] **Re-enable invitations sync** — 10,272 records backfilled via `backfill-invitations.js`, incremental sync active
+- [ ] **Switch tickets to production table** — change `TABLES.tickets` in `src/config.js` from `{{API TEST}}` to `BSS'26` (`tblVGGdO9QrRYi50x`), run `node src/backfill.js --table "BSS'26" --dry-run` then live, redeploy worker
 - [ ] **Compare SP transferer fields vs existing `Transfer From Name` / `Transferred From Email`** fields in Airtable — once data looks good in the SP* fields, decide whether to map directly or keep separate
 
 ---
