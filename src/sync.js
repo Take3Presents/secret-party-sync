@@ -19,7 +19,8 @@ function mapRecord(record, type) {
       ? spField.split('.').reduce((obj, key) => obj?.[key], record)
       : record[spField];
     if (value !== undefined && value !== null) {
-      fields[airtableField] = value;
+      // SP Level is a singleLineText field in Airtable but SP returns it as a number
+      fields[airtableField] = airtableField === 'SP Level' ? String(value) : value;
     }
   }
   return { fields };
