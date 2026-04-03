@@ -105,7 +105,8 @@ async function syncEndpoint(type, spApiKey, airtableApiKey, triggeredBy) {
     await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, type, triggeredBy, nextCursor, 'success', { created, updated, fetched });
   } catch (err) {
     console.error(`[${type}] error: ${err.message}`);
-    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, type, triggeredBy, nextCursor, 'failed', { created, updated, fetched }, err.message);
+    // Log the original cursor (not nextCursor) so the next run retries from the same point
+    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, type, triggeredBy, cursor, 'failed', { created, updated, fetched }, err.message);
     throw err;
   }
 
