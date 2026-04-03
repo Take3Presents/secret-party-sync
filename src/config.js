@@ -9,8 +9,8 @@ export const BASES = {
 };
 
 export const TABLES = {
+  invitations: 'Current Invite List',
   // Currently pointing at {{API TEST}} — swap to 'BSS\'26' (tblVGGdO9QrRYi50x) when ready for prod
-  invitations: '{{API TEST}}',
   tickets: '{{API TEST}}',
   syncState: '{{Sync State}}',
 };
@@ -26,10 +26,10 @@ export const MERGE_FIELDS = {
 export const FIELD_MAP = {
   invitations: {
     id: 'SP ID',
-    code: 'Invitation Code',
+    code: 'Invite Code',
     first_name: 'First Name',
     last_name: 'Last Name',
-    email: 'Email from SP',
+    email: 'Email',
     phone: 'Phone',
     stage: 'SP Stage',
     status: 'SP Status',

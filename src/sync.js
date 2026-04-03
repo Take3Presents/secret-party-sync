@@ -111,10 +111,11 @@ async function syncEndpoint(type, spApiKey, airtableApiKey, triggeredBy) {
 export async function runSync(spApiKey, airtableApiKey, triggeredBy = 'scheduled') {
   console.log('Sync started:', new Date().toISOString());
 
+  const invitationResult = await syncEndpoint('invitations', spApiKey, airtableApiKey, triggeredBy);
   const ticketResult = await syncEndpoint('tickets', spApiKey, airtableApiKey, triggeredBy);
 
   const summary = {
-    invitations: { fetched: 0, created: 0, updated: 0 },
+    invitations: invitationResult,
     tickets: ticketResult,
     timestamp: new Date().toISOString(),
   };
