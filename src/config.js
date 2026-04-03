@@ -45,6 +45,7 @@ export const FIELD_MAP = {
     'inviter.name': 'SP Inviter Name',
     'parent_invitation.id': 'SP Parent Invitation ID',
     'parent_invitation.code': 'SP Parent Invitation Code',
+    tickets: 'SP Tickets',
   },
   tickets: {
     id: 'SP ID',
@@ -79,9 +80,11 @@ export const FIELD_MAP = {
     created_at: 'SP Created At',
     updated_at: 'SP Updated At',
     // Nested fields
+    promotion_code: 'SP Promo Code',
     'product.name': 'SP Product Name',
     'product.type': 'SP Product Type',
     'product.is_transfer_allowed': 'SP Product Transfer Allowed',
+    invitation: 'SP Invitation',
   },
 };
 

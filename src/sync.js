@@ -20,7 +20,14 @@ function mapRecord(record, type) {
       : record[spField];
     if (value !== undefined && value !== null) {
       // SP Level is a singleLineText field in Airtable but SP returns it as a number
-      fields[airtableField] = airtableField === 'SP Level' ? String(value) : value;
+      if (airtableField === 'SP Level') {
+        fields[airtableField] = String(value);
+      // Objects and arrays are stored as JSON in multilineText fields
+      } else if (typeof value === 'object') {
+        fields[airtableField] = JSON.stringify(value, null, 2);
+      } else {
+        fields[airtableField] = value;
+      }
     }
   }
   return { fields };
