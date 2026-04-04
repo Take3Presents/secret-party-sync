@@ -10,8 +10,7 @@ export const BASES = {
 
 export const TABLES = {
   invitations: 'Current Invite List',
-  // Currently pointing at {{API TEST}} — swap to 'BSS\'26' (tblVGGdO9QrRYi50x) when ready for prod
-  tickets: '{{API TEST}}',
+  tickets: 'BSS\'26',
   syncState: '{{Sync State}}',
 };
 
