@@ -66,6 +66,7 @@ export const FIELD_MAP = {
     transferee_first_name: 'SP Transferee First Name',
     transferee_last_name: 'SP Transferee Last Name',
     transferee_email: 'SP Transferee Email',
+    transferer_code: 'SP Transferer Code',
     transferer_first_name: 'SP Transferer First Name',
     transferer_last_name: 'SP Transferer Last Name',
     transferer_email: 'SP Transferer Email',
