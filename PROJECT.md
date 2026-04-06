@@ -47,7 +47,7 @@ Syncing both **tickets** (into `BSS'26`) and **invitations** (into `Current Invi
 
 ### GitHub + Auto-deploy
 
-- **Repo:** https://github.com/Take3Presents/secret-party-sync (private)
+- **Repo:** https://github.com/Take3Presents/secret-party-sync (private) — canonical org repo. Personal repo (brianthomas17/secret-party-sync) archived.
 - **Auto-deploy:** Every push to `main` triggers `.github/workflows/deploy.yml` which deploys to Cloudflare via `cloudflare/wrangler-action@v3`
 - **GitHub secret required:** `CLOUDFLARE_API_TOKEN` — already set in repo secrets
 - **Bottom line:** Push to GitHub = deployed to production. **Do not run `npm run deploy` directly** — all deploys should go through GitHub so there's a record of what was deployed and when.
