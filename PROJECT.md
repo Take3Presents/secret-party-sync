@@ -410,7 +410,7 @@ SP has **~1,046 tickets**, **~515 add-ons**, and **~10,336 invitations** as of A
 - [x] **Switch tickets to production table** — `BSS'26` live as of April 2026, 747 records backfilled
 - [x] **Switch all Airtable references to field/table IDs** — done April 2026
 - [x] **Add add-ons sync** — 515 records backfilled into `Add-Ons`, incremental sync active
-- [ ] **Compare SP transferer fields vs existing `Transfer From Name` / `Transferred From Email`** fields in Airtable — decide whether to map SP transferer fields there or keep them separate
+- [x] **Compare SP transferer fields vs existing `Transfer From Name` / `Transferred From Email`** fields in Airtable — keeping SP Transferer fields separate, no action needed
 
 ---
 
