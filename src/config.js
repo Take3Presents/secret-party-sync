@@ -3,41 +3,86 @@
 // ============================================================
 
 export const BASES = {
+  addons: 'appgvcig9jwAhim6W',
   invitations: 'appgvcig9jwAhim6W',
   tickets: 'appgvcig9jwAhim6W',
   syncState: 'appgvcig9jwAhim6W',
 };
 
 export const TABLES = {
-  invitations: 'tblKgwXnpqWjf8Z8q', // Invitations
-  tickets: 'tblVGGdO9QrRYi50x',     // BSS'26
-  syncState: 'tblT06K1k450mZ6q2',   // {{Sync State}}
+  addons: 'tblgcN9VlJ4jT5R2h',       // Add-Ons
+  invitations: 'tblKgwXnpqWjf8Z8q',  // Invitations
+  tickets: 'tblVGGdO9QrRYi50x',      // BSS'26
+  syncState: 'tblT06K1k450mZ6q2',    // {{Sync State}}
 };
 
 // The Airtable field ID used to uniquely identify each SP record (upsert merge key)
 export const MERGE_FIELDS = {
-  invitations: 'fldFBesn9Xnq5TM3d', // SP ID
-  tickets: 'fldq44PIoUKPDHh6m',     // SP ID
+  addons: 'fldP1ir0aTTKnE4bx',       // SP ID
+  invitations: 'fldFBesn9Xnq5TM3d',  // SP ID
+  tickets: 'fldq44PIoUKPDHh6m',      // SP ID
 };
 
 // Sync State table field IDs — used by airtable.js getCursor / logSync
 export const SYNC_STATE_FIELDS = {
-  endpoint:             'fldAo1psPukG3sQ1h', // Endpoint
-  cursor:               'fldvBpePE7mnRrVDP', // Cursor
-  triggeredBy:          'fldEItJaRgt9VPVK8', // Triggered By
-  syncedAt:             'fld9aDm40gw6cBGnR', // Synced At
-  status:               'fldWBdEoxTp6h8nfg', // Status
-  error:                'fldLlLrqoEG6j4boI', // Error
-  recordsFetched:       'fldRcckVEjGONXEaR', // Records Fetched
-  invitationsCreated:   'fldGDBLEfUhqE75sW', // Invitations Created
-  invitationsUpdated:   'fldjitUvHM6tSVwae', // Invitations Updated
-  ticketsCreated:       'fldwWYgSXESA2KgCG', // Tickets Created
-  ticketsUpdated:       'fldgkyq5nuTPsU7x3', // Tickets Updated
+  endpoint:           'fldAo1psPukG3sQ1h', // Endpoint
+  cursor:             'fldvBpePE7mnRrVDP', // Cursor
+  triggeredBy:        'fldEItJaRgt9VPVK8', // Triggered By
+  syncedAt:           'fld9aDm40gw6cBGnR', // Synced At
+  status:             'fldWBdEoxTp6h8nfg', // Status
+  error:              'fldLlLrqoEG6j4boI', // Error
+  recordsFetched:     'fldRcckVEjGONXEaR', // Records Fetched
+  invitationsCreated: 'fldGDBLEfUhqE75sW', // Invitations Created
+  invitationsUpdated: 'fldjitUvHM6tSVwae', // Invitations Updated
+  ticketsCreated:     'fldwWYgSXESA2KgCG', // Tickets Created
+  ticketsUpdated:     'fldgkyq5nuTPsU7x3', // Tickets Updated
+  addonsCreated:      'fldW9JzB45S6hUvP2', // Add-Ons Created
+  addonsUpdated:      'fldC8EK7KrlLNMs4j', // Add-Ons Updated
 };
 
 // Field mapping: Secret Party API field → Airtable field ID
-// Nested fields use dot notation: 'product.name' → top-level product name string
+// Nested fields use dot notation: 'product.name' → resolved via nested object traversal
 export const FIELD_MAP = {
+  addons: {
+    id:                             'fldP1ir0aTTKnE4bx', // SP ID
+    code:                           'fldljYwmabwfRZGnH', // Add-on Code
+    invitation_code:                'fldTxbTWCDu8niD1x', // Invitation Code
+    invitation_id:                  'fld4WsRmoGW3YrPH2', // SP Invitation ID
+    first_name:                     'fldzbyMhjaZ5xnT4S', // SP First Name
+    last_name:                      'fldXpymlAD0XEQ4cl', // SP Last Name
+    email:                          'fldoAzpdEEBGwZevF', // Email from SP
+    phone:                          'fldxUeLMndhP0n0bJ', // SP Phone
+    stage:                          'flduCGSqF03RLvkye', // SP Stage
+    status:                         'fldPSH5a7Ceybw2rj', // SP Status
+    invites_per:                    'fldSAvAgVbJ9F12it', // SP Invites Per
+    purchase_price:                 'fldBASNY9tFgDk0zH', // SP Purchase Price
+    surcharge_fee:                  'fldPtUL6ssQ947Ops', // SP Surcharge Fee
+    service_fee:                    'fldf2x2qVMFbeaQBM', // SP Service Fee
+    processing_fee:                 'fldEN2czJ9ji73Gzi', // SP Processing Fee
+    total:                          'fldhYgOWPN1lgNFiK', // SP Total
+    transfer_fee:                   'fldfhnEMIWX1PeoQ9', // SP Transfer Fee
+    transfer_requires_payment:      'fldYOKVAI5FqfzuaW', // SP Transfer Requires Payment
+    transfer_status:                'fld6c78vwTFqfycyn', // SP Transfer Status
+    transferee_first_name:          'fldTvCUBFwiNgSLQO', // SP Transferee First Name
+    transferee_last_name:           'fldAU2uZwEHKMhWbv', // SP Transferee Last Name
+    transferee_email:               'fldznohcA7d0yBut7', // SP Transferee Email
+    transferer_code:                'fldEfFOuYC1Xo1qVw', // SP Transferer Code
+    transferer_first_name:          'fldsna5IOIbEWDqS9', // SP Transferer First Name
+    transferer_last_name:           'flde86HiAs9kBrLLE', // SP Transferer Last Name
+    transferer_email:               'fld1TF00D0uAGNKxq', // SP Transferer Email
+    sales_organizer_revenue_amount: 'fldzhlCuhon53YxCM', // SP Sales Organizer Revenue
+    is_checked_in:                  'fldZETh8m9SZotUwy', // SP Is Checked In
+    checkin_updated_at:             'fldWGJhnQVDWQ3VvX', // SP Checkin At
+    total_unlocked_by_count:        'fldWgsRoxF1xzVasZ', // SP Total Unlocked By Count
+    promotion_code:                 'fld37hcwC72lPrdM1', // SP Promo Code
+    created_at:                     'fldaDlC1uVLqloCDt', // SP Created At
+    updated_at:                     'fldOrbWKqbvWqlULq', // SP Updated At
+    // Nested fields
+    'product.name':                 'fldXOQFcZEwJqaHlo', // SP Product Name
+    'product.type':                 'fld4l79yNBNSb2j9t', // SP Product Type
+    'product.is_transfer_allowed':  'fld5hd8EVddFKRwMX', // SP Product Transfer Allowed
+    invitation:                     'fldw23tKBMi00v0Ph', // SP Invitation
+  },
   invitations: {
     id:                           'fldFBesn9Xnq5TM3d', // SP ID
     code:                         'fldGlaQiv57ukK0gR', // Invite Code

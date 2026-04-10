@@ -94,17 +94,20 @@ export async function getCursor(apiKey, baseId, tableId, endpoint) {
  */
 export async function logSync(apiKey, baseId, tableId, endpoint, triggeredBy, cursor, status, result, error = null) {
   const f = SYNC_STATE_FIELDS;
-  const isTickets = endpoint === 'tickets';
+  const isInvitations = endpoint === 'invitations';
+  const isTicketsAndAddons = endpoint === 'tickets/add-ons';
   const fields = {
     [f.endpoint]:           endpoint,
     [f.triggeredBy]:        triggeredBy,
     [f.syncedAt]:           new Date().toISOString(),
     [f.status]:             status,
     [f.recordsFetched]:     result.fetched,
-    [f.invitationsCreated]: isTickets ? 0 : result.created,
-    [f.invitationsUpdated]: isTickets ? 0 : result.updated,
-    [f.ticketsCreated]:     isTickets ? result.created : 0,
-    [f.ticketsUpdated]:     isTickets ? result.updated : 0,
+    [f.invitationsCreated]: isInvitations ? result.created : 0,
+    [f.invitationsUpdated]: isInvitations ? result.updated : 0,
+    [f.ticketsCreated]:     isTicketsAndAddons ? (result.ticketsCreated ?? 0) : 0,
+    [f.ticketsUpdated]:     isTicketsAndAddons ? (result.ticketsUpdated ?? 0) : 0,
+    [f.addonsCreated]:      isTicketsAndAddons ? (result.addonsCreated ?? 0) : 0,
+    [f.addonsUpdated]:      isTicketsAndAddons ? (result.addonsUpdated ?? 0) : 0,
   };
   if (cursor) fields[f.cursor] = cursor;
   if (error) fields[f.error] = error;

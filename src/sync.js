@@ -7,7 +7,7 @@ import { BASES, TABLES, MERGE_FIELDS, FIELD_MAP, COERCE_TO_STRING } from './conf
  * Only includes fields that are defined in the map.
  *
  * @param {object} record - raw record from Secret Party API
- * @param {'invitations'|'tickets'} type
+ * @param {'invitations'|'tickets'|'addons'} type
  * @returns {{ fields: object }}
  */
 function mapRecord(record, type) {
@@ -33,24 +33,16 @@ function mapRecord(record, type) {
 }
 
 /**
- * Sync one endpoint (invitations or tickets).
- * Reads cursor → fetches from SP API → upserts to Airtable → saves new cursor.
+ * Sync invitations endpoint.
  *
- * @param {'invitations'|'tickets'} type
  * @param {string} spApiKey
  * @param {string} airtableApiKey
+ * @param {string} triggeredBy
  * @returns {{ created: number, updated: number, fetched: number }}
  */
-async function syncEndpoint(type, spApiKey, airtableApiKey, triggeredBy) {
-  // 1. Read the stored cursor (null = first run, do a full sync)
-  const cursor = await getCursor(
-    airtableApiKey,
-    BASES.syncState,
-    TABLES.syncState,
-    type,
-  );
-
-  console.log(`[${type}] cursor: ${cursor ?? 'none — full sync'}`);
+async function syncInvitations(spApiKey, airtableApiKey, triggeredBy) {
+  const cursor = await getCursor(airtableApiKey, BASES.syncState, TABLES.syncState, 'invitations');
+  console.log(`[invitations] cursor: ${cursor ?? 'none — full sync'}`);
 
   let nextCursor = cursor;
   let fetched = 0;
@@ -58,54 +50,31 @@ async function syncEndpoint(type, spApiKey, airtableApiKey, triggeredBy) {
   let updated = 0;
 
   try {
-    // 2. Fetch from Secret Party
-    const { records, meta } = await fetchRecords(type, spApiKey, cursor);
+    const { records, meta } = await fetchRecords('invitations', spApiKey, cursor);
     fetched = meta.returned_count;
-    console.log(`[${type}] fetched ${fetched} records`);
 
-    // 3. Determine next cursor. If SP returns the same cursor we sent, nudge forward
-    // 1 second to avoid fetching the same boundary records on every run.
     nextCursor = meta.next_updated_after ?? cursor;
     if (nextCursor && cursor && nextCursor === cursor) {
       nextCursor = new Date(new Date(cursor).getTime() + 1000).toISOString();
-      console.log(`[${type}] cursor unchanged — nudging forward to: ${nextCursor}`);
+      console.log(`[invitations] cursor unchanged — nudging forward to: ${nextCursor}`);
     }
 
-    // 4. Filter out records SP incorrectly returns past the cursor (known SP API bug:
-    //    some records are always returned regardless of updated_after). Only process
-    //    records whose updated_at is strictly after the cursor we sent.
-    const genuineRecords = cursor
-      ? records.filter((r) => r.updated_at > cursor)
-      : records;
+    const genuineRecords = cursor ? records.filter((r) => r.updated_at > cursor) : records;
+    fetched = genuineRecords.length;
+    console.log(`[invitations] genuine records after cursor filter: ${fetched} (SP returned ${records.length})`);
 
-    // For tickets, skip add-ons — we only want product.type === 'ticket'
-    const filteredRecords = type === 'tickets'
-      ? genuineRecords.filter((r) => r.product?.type === 'ticket')
-      : genuineRecords;
-
-    fetched = filteredRecords.length;
-    console.log(`[${type}] genuine records after cursor filter: ${fetched} (SP returned ${records.length})`);
-
-    // 5. Upsert into Airtable
-    if (filteredRecords.length > 0) {
-      const airtableRecords = filteredRecords.map((r) => mapRecord(r, type));
-      const result = await upsertRecords(
-        airtableApiKey,
-        BASES[type],
-        TABLES[type],
-        airtableRecords,
-        MERGE_FIELDS[type],
-      );
+    if (genuineRecords.length > 0) {
+      const airtableRecords = genuineRecords.map((r) => mapRecord(r, 'invitations'));
+      const result = await upsertRecords(airtableApiKey, BASES.invitations, TABLES.invitations, airtableRecords, MERGE_FIELDS.invitations);
       created = result.createdRecords.length;
       updated = result.updatedRecords.length;
-      console.log(`[${type}] created: ${created}, updated: ${updated}`);
+      console.log(`[invitations] created: ${created}, updated: ${updated}`);
     }
 
-    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, type, triggeredBy, nextCursor, 'success', { created, updated, fetched });
+    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, 'invitations', triggeredBy, nextCursor, 'success', { created, updated, fetched });
   } catch (err) {
-    console.error(`[${type}] error: ${err.message}`);
-    // Log the original cursor (not nextCursor) so the next run retries from the same point
-    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, type, triggeredBy, cursor, 'failed', { created, updated, fetched }, err.message);
+    console.error(`[invitations] error: ${err.message}`);
+    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, 'invitations', triggeredBy, cursor, 'failed', { created, updated, fetched }, err.message);
     throw err;
   }
 
@@ -113,8 +82,79 @@ async function syncEndpoint(type, spApiKey, airtableApiKey, triggeredBy) {
 }
 
 /**
+ * Sync tickets and add-ons from a single SP fetch, upsert to their respective tables,
+ * and log as a single 'tickets/add-ons' row.
+ *
+ * @param {string} spApiKey
+ * @param {string} airtableApiKey
+ * @param {string} triggeredBy
+ * @returns {{ fetched: number, ticketsCreated: number, ticketsUpdated: number, addonsCreated: number, addonsUpdated: number }}
+ */
+async function syncTicketsAndAddons(spApiKey, airtableApiKey, triggeredBy) {
+  const cursor = await getCursor(airtableApiKey, BASES.syncState, TABLES.syncState, 'tickets/add-ons');
+  console.log(`[tickets/add-ons] cursor: ${cursor ?? 'none — full sync'}`);
+
+  let nextCursor = cursor;
+  let fetched = 0;
+  let ticketsCreated = 0;
+  let ticketsUpdated = 0;
+  let addonsCreated = 0;
+  let addonsUpdated = 0;
+
+  try {
+    const { records, meta } = await fetchRecords('tickets', spApiKey, cursor);
+
+    nextCursor = meta.next_updated_after ?? cursor;
+    if (nextCursor && cursor && nextCursor === cursor) {
+      nextCursor = new Date(new Date(cursor).getTime() + 1000).toISOString();
+      console.log(`[tickets/add-ons] cursor unchanged — nudging forward to: ${nextCursor}`);
+    }
+
+    // Filter out stale records (known SP API bug: some records always returned regardless of cursor)
+    const genuineRecords = cursor ? records.filter((r) => r.updated_at > cursor) : records;
+
+    // Split into tickets and add-ons
+    const tickets = genuineRecords.filter((r) => r.product?.type === 'ticket');
+    const addons = genuineRecords.filter((r) => r.product?.type !== 'ticket');
+    fetched = genuineRecords.length;
+    console.log(`[tickets/add-ons] genuine: ${fetched} total (${tickets.length} tickets, ${addons.length} add-ons) — SP returned ${records.length}`);
+
+    // Upsert tickets
+    if (tickets.length > 0) {
+      const result = await upsertRecords(
+        airtableApiKey, BASES.tickets, TABLES.tickets,
+        tickets.map((r) => mapRecord(r, 'tickets')),
+        MERGE_FIELDS.tickets,
+      );
+      ticketsCreated = result.createdRecords.length;
+      ticketsUpdated = result.updatedRecords.length;
+      console.log(`[tickets] created: ${ticketsCreated}, updated: ${ticketsUpdated}`);
+    }
+
+    // Upsert add-ons
+    if (addons.length > 0) {
+      const result = await upsertRecords(
+        airtableApiKey, BASES.addons, TABLES.addons,
+        addons.map((r) => mapRecord(r, 'addons')),
+        MERGE_FIELDS.addons,
+      );
+      addonsCreated = result.createdRecords.length;
+      addonsUpdated = result.updatedRecords.length;
+      console.log(`[add-ons] created: ${addonsCreated}, updated: ${addonsUpdated}`);
+    }
+
+    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, 'tickets/add-ons', triggeredBy, nextCursor, 'success', { fetched, ticketsCreated, ticketsUpdated, addonsCreated, addonsUpdated });
+  } catch (err) {
+    console.error(`[tickets/add-ons] error: ${err.message}`);
+    await logSync(airtableApiKey, BASES.syncState, TABLES.syncState, 'tickets/add-ons', triggeredBy, cursor, 'failed', { fetched, ticketsCreated, ticketsUpdated, addonsCreated, addonsUpdated }, err.message);
+    throw err;
+  }
+
+  return { fetched, ticketsCreated, ticketsUpdated, addonsCreated, addonsUpdated };
+}
+
+/**
  * Run a full sync of all endpoints.
- * Runs invitations and tickets in parallel for speed.
  *
  * @param {string} spApiKey
  * @param {string} airtableApiKey
@@ -124,12 +164,12 @@ async function syncEndpoint(type, spApiKey, airtableApiKey, triggeredBy) {
 export async function runSync(spApiKey, airtableApiKey, triggeredBy = 'scheduled') {
   console.log('Sync started:', new Date().toISOString());
 
-  const invitationResult = await syncEndpoint('invitations', spApiKey, airtableApiKey, triggeredBy);
-  const ticketResult = await syncEndpoint('tickets', spApiKey, airtableApiKey, triggeredBy);
+  const invitationResult = await syncInvitations(spApiKey, airtableApiKey, triggeredBy);
+  const ticketsResult = await syncTicketsAndAddons(spApiKey, airtableApiKey, triggeredBy);
 
   const summary = {
     invitations: invitationResult,
-    tickets: ticketResult,
+    tickets: ticketsResult,
     timestamp: new Date().toISOString(),
   };
 
