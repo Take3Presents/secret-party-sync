@@ -13,7 +13,7 @@
  *   --help      Show this message
  */
 
-import { BASES, TABLES, FIELD_MAP } from './config.js';
+import { BASES, TABLES, FIELD_MAP, COERCE_TO_STRING } from './config.js';
 
 const AIRTABLE_API = 'https://api.airtable.com/v0';
 const SP_BASE_URL  = 'https://api.secretparty.io/secret';
@@ -50,8 +50,7 @@ function mapRecord(spRecord) {
       ? spField.split('.').reduce((obj, key) => obj?.[key], spRecord)
       : spRecord[spField];
     if (value !== undefined && value !== null) {
-      // SP Level is a singleLineText field in Airtable but SP returns it as a number
-      if (airtableField === 'SP Level') {
+      if (COERCE_TO_STRING.has(airtableField)) {
         fields[airtableField] = String(value);
       // Objects and arrays are stored as JSON in multilineText fields
       } else if (typeof value === 'object') {

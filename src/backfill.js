@@ -6,7 +6,7 @@
  *   SECRET_PARTY_API_KEY=... AIRTABLE_API_KEY=... node src/backfill.js [options]
  *
  * Options:
- *   --table <name|id>   Airtable table to target (default: value from config.js)
+ *   --table <id>        Airtable table ID to target (default: TABLES.tickets from config.js)
  *   --dry-run           Preview what would be patched without writing anything
  *   --help              Show this message
  *
@@ -21,7 +21,11 @@
  *   node src/backfill.js --table "BSS'26"
  */
 
-import { BASES, TABLES, SP_BASE_URL, FIELD_MAP } from './config.js';
+import { BASES, TABLES, SP_BASE_URL, FIELD_MAP, COERCE_TO_STRING } from './config.js';
+
+// Field IDs for the two fields we read back from Airtable during matching
+const FIELD_SP_ID      = 'fldq44PIoUKPDHh6m'; // SP ID (BSS'26)
+const FIELD_TICKET_CODE = 'fldxeLnKcGsno43UB'; // Ticket Code (BSS'26)
 
 const AIRTABLE_API = 'https://api.airtable.com/v0';
 const BATCH_SIZE = 10;          // Airtable max records per PATCH request
@@ -73,8 +77,9 @@ async function fetchAllAirtableRecords(apiKey, baseId, tableId) {
 
   do {
     const url = new URL(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}`);
-    url.searchParams.set('fields[]', 'SP ID');
-    url.searchParams.set('fields[]', 'Ticket Code');
+    url.searchParams.set('fields[]', FIELD_SP_ID);
+    url.searchParams.set('fields[]', FIELD_TICKET_CODE);
+    url.searchParams.set('returnFieldsByFieldId', 'true');
     if (offset) url.searchParams.set('offset', offset);
 
     const response = await fetch(url.toString(), {
@@ -102,7 +107,9 @@ function mapSpRecord(spRecord) {
       ? spField.split('.').reduce((obj, key) => obj?.[key], spRecord)
       : spRecord[spField];
     if (value !== undefined && value !== null) {
-      if (typeof value === 'object') {
+      if (COERCE_TO_STRING.has(airtableField)) {
+        fields[airtableField] = String(value);
+      } else if (typeof value === 'object') {
         fields[airtableField] = JSON.stringify(value, null, 2);
       } else {
         fields[airtableField] = value;
@@ -176,8 +183,8 @@ let matched = 0;
 let unmatched = 0;
 
 for (const record of airtableRecords) {
-  const spId      = record.fields['SP ID'];
-  const ticketCode = record.fields['Ticket Code'];
+  const spId      = record.fields[FIELD_SP_ID];
+  const ticketCode = record.fields[FIELD_TICKET_CODE];
 
   let spRecord = null;
   if (spId && ticketById.has(String(spId))) {

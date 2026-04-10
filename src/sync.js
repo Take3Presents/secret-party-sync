@@ -1,6 +1,6 @@
 import { fetchRecords } from './secretparty.js';
 import { upsertRecords, getCursor, logSync } from './airtable.js';
-import { BASES, TABLES, MERGE_FIELDS, FIELD_MAP } from './config.js';
+import { BASES, TABLES, MERGE_FIELDS, FIELD_MAP, COERCE_TO_STRING } from './config.js';
 
 /**
  * Map a raw Secret Party record to Airtable fields using FIELD_MAP.
@@ -19,8 +19,7 @@ function mapRecord(record, type) {
       ? spField.split('.').reduce((obj, key) => obj?.[key], record)
       : record[spField];
     if (value !== undefined && value !== null) {
-      // SP Level is a singleLineText field in Airtable but SP returns it as a number
-      if (airtableField === 'SP Level') {
+      if (COERCE_TO_STRING.has(airtableField)) {
         fields[airtableField] = String(value);
       // Objects and arrays are stored as JSON in multilineText fields
       } else if (typeof value === 'object') {

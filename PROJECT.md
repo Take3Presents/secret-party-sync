@@ -74,7 +74,7 @@ To reset a secret: `npx wrangler secret put <NAME>`
 |---|---|
 | **Base ID** | `appgvcig9jwAhim6W` |
 | **Tickets table (production)** | `BSS'26` (`tblVGGdO9QrRYi50x`) |
-| **Invitations table** | `Current Invite List` (`tblKgwXnpqWjf8Z8q`) |
+| **Invitations table** | `Invitations` (`tblKgwXnpqWjf8Z8q`) — previously named `Current Invite List` |
 | **Sync State table** | `{{Sync State}}` (`tblT06K1k450mZ6q2`) |
 | **Test table (retired)** | `{{API TEST}}` (`tblYlEp61232FQgsF`) — no longer used by worker |
 

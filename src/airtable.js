@@ -1,3 +1,5 @@
+import { SYNC_STATE_FIELDS } from './config.js';
+
 const AIRTABLE_API = 'https://api.airtable.com/v0';
 const UPSERT_BATCH_SIZE = 10; // Airtable max per request
 
@@ -7,9 +9,9 @@ const UPSERT_BATCH_SIZE = 10; // Airtable max per request
  *
  * @param {string} apiKey - Airtable personal access token
  * @param {string} baseId - e.g. 'appXXXXXXXXXXXXXX'
- * @param {string} tableId - table name or ID
+ * @param {string} tableId - table ID
  * @param {object[]} records - array of { fields: {...} } objects
- * @param {string} mergeField - the Airtable field name to match on (e.g. 'SP ID')
+ * @param {string} mergeField - the Airtable field ID to match on
  * @returns {{ createdRecords: string[], updatedRecords: string[] }}
  */
 export async function upsertRecords(apiKey, baseId, tableId, records, mergeField) {
@@ -57,11 +59,13 @@ export async function upsertRecords(apiKey, baseId, tableId, records, mergeField
  * @returns {string|null} ISO-8601 cursor or null
  */
 export async function getCursor(apiKey, baseId, tableId, endpoint) {
+  const f = SYNC_STATE_FIELDS;
   const url = new URL(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}`);
-  url.searchParams.set('filterByFormula', `AND({Endpoint} = '${endpoint}', {Cursor} != '')`);
-  url.searchParams.set('sort[0][field]', 'Synced At');
+  url.searchParams.set('filterByFormula', `AND({${f.endpoint}} = '${endpoint}', {${f.cursor}} != '')`);
+  url.searchParams.set('sort[0][field]', f.syncedAt);
   url.searchParams.set('sort[0][direction]', 'desc');
   url.searchParams.set('maxRecords', '1');
+  url.searchParams.set('returnFieldsByFieldId', 'true');
 
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${apiKey}` },
@@ -72,7 +76,7 @@ export async function getCursor(apiKey, baseId, tableId, endpoint) {
   }
 
   const data = await response.json();
-  return data.records?.[0]?.fields?.['Cursor'] ?? null;
+  return data.records?.[0]?.fields?.[f.cursor] ?? null;
 }
 
 /**
@@ -89,20 +93,21 @@ export async function getCursor(apiKey, baseId, tableId, endpoint) {
  * @param {string|null} error - error message if failed
  */
 export async function logSync(apiKey, baseId, tableId, endpoint, triggeredBy, cursor, status, result, error = null) {
+  const f = SYNC_STATE_FIELDS;
   const isTickets = endpoint === 'tickets';
   const fields = {
-    'Endpoint': endpoint,
-    'Triggered By': triggeredBy,
-    'Synced At': new Date().toISOString(),
-    'Status': status,
-    'Records Fetched': result.fetched,
-    'Invitations Created': isTickets ? 0 : result.created,
-    'Invitations Updated': isTickets ? 0 : result.updated,
-    'Tickets Created': isTickets ? result.created : 0,
-    'Tickets Updated': isTickets ? result.updated : 0,
+    [f.endpoint]:           endpoint,
+    [f.triggeredBy]:        triggeredBy,
+    [f.syncedAt]:           new Date().toISOString(),
+    [f.status]:             status,
+    [f.recordsFetched]:     result.fetched,
+    [f.invitationsCreated]: isTickets ? 0 : result.created,
+    [f.invitationsUpdated]: isTickets ? 0 : result.updated,
+    [f.ticketsCreated]:     isTickets ? result.created : 0,
+    [f.ticketsUpdated]:     isTickets ? result.updated : 0,
   };
-  if (cursor) fields['Cursor'] = cursor;
-  if (error) fields['Error'] = error;
+  if (cursor) fields[f.cursor] = cursor;
+  if (error) fields[f.error] = error;
 
   const response = await fetch(`${AIRTABLE_API}/${baseId}/${encodeURIComponent(tableId)}`, {
     method: 'POST',
