@@ -440,6 +440,7 @@ The Worker's `AIRTABLE_API_KEY` (see .dev.vars) can also be used directly with `
 ## Known Gotchas
 
 - **All Airtable writes use field IDs and table IDs** — field/table renames in Airtable will not break the sync. Field IDs are in `src/config.js` with name comments.
+- **Airtable 403 `INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` with a valid token** — this has happened twice and is NOT a real permissions error. It's Airtable failing to resolve a table or field **by name** even though the token is correct. Fix: use the table/field ID instead of the name. This is why everything in `config.js` uses IDs.
 - **`SP ID` must stay as plain text or number** — Airtable's `performUpsert` won't work on formula, lookup, or rollup fields
 - **Airtable counts matched records as "updated"** even if no values changed — counts in the log ≠ actual data changes
 - **`null` / `undefined` SP fields are skipped** — `mapRecord()` only writes fields that have a value. A null SP field won't overwrite an existing Airtable value (intentional — preserves manual edits)
