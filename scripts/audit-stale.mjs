@@ -11,6 +11,12 @@
  * Usage:
  *   node --env-file=.dev.vars scripts/audit-stale.mjs            # report + CSV
  *   node --env-file=.dev.vars scripts/audit-stale.mjs --delete-invitations
+ *   node --env-file=.dev.vars scripts/audit-stale.mjs --delete-tickets --expect 112
+ *
+ * --expect <n> is a safety interlock and is REQUIRED for --delete-tickets.
+ * "Stale" is defined as "Secret Party no longer returns this SP ID", so an API
+ * hiccup that returns an empty list would otherwise make every synced row look
+ * stale. Deletion aborts unless the count matches the number you reviewed.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -22,7 +28,29 @@ const AT = process.env.AIRTABLE_API_KEY;
 const SP = process.env.SECRET_PARTY_API_KEY;
 
 const deleteInvitations = process.argv.includes('--delete-invitations');
+const deleteTickets = process.argv.includes('--delete-tickets');
+const expectIndex = process.argv.indexOf('--expect');
+const expected = expectIndex === -1 ? null : Number(process.argv[expectIndex + 1]);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Refuse to delete unless the caller predicted the exact count.
+ *
+ * Staleness is inferred from absence in the Secret Party response, so a
+ * transient empty or partial response would classify live rows as stale. This
+ * turns that failure mode into an abort instead of a mass deletion.
+ */
+function assertExpected(label, actual) {
+  if (expected === null) {
+    console.error(`\nRefusing to delete ${label}: pass --expect <n> with the count you reviewed.`);
+    process.exit(1);
+  }
+  if (actual !== expected) {
+    console.error(`\nRefusing to delete ${label}: expected ${expected}, found ${actual}.`);
+    console.error('Re-run without the delete flag, review the change, then retry with the new count.');
+    process.exit(1);
+  }
+}
 
 async function spIds(endpoint) {
   const response = await fetch(`${SP_BASE_URL}/${endpoint}`, { headers: { Authorization: `Bearer ${SP}` } });
@@ -97,6 +125,23 @@ if (deleteInvitations) {
   console.log(`\nDeleting ${staleInvitations.length} stale invitation row(s)...`);
   await deleteRows(TABLES.invitations, staleInvitations.map((r) => r.id));
   console.log('Done.');
-} else {
-  console.log('\nNo rows deleted. Re-run with --delete-invitations to remove the stale invitations.');
+}
+
+if (deleteTickets) {
+  assertExpected('tickets', staleTickets.length);
+
+  // These rows are linked into other tables. Report what loses a link so the
+  // blast radius is on the record, not just in the CSV.
+  const linkedPeople = new Set(staleTickets.flatMap((r) => r.fields['🫀People'] ?? []));
+  const linkedEmail = new Set(staleTickets.flatMap((r) => r.fields['Email'] ?? []));
+  console.log(`\nDeleting ${staleTickets.length} stale ticket row(s).`);
+  console.log(`  breaks links to ${linkedPeople.size} 🫀People record(s) and ${linkedEmail.size} Email record(s)`);
+  console.log(`  backup: tmp/stale-tickets.csv`);
+
+  await deleteRows(TABLES.tickets, staleTickets.map((r) => r.id));
+  console.log('Done.');
+}
+
+if (!deleteInvitations && !deleteTickets) {
+  console.log('\nNo rows deleted. Add --delete-invitations and/or --delete-tickets --expect <n>.');
 }
