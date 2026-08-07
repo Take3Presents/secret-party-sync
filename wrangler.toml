@@ -6,6 +6,16 @@ compatibility_flags = ["nodejs_compat"]
 [triggers]
 crons = ["*/5 * * * *"]
 
+[vars]
+# The Secret Party event this sync is bound to. Records belonging to any other
+# event are ignored, so clearing an Airtable table for a new cycle can't be
+# undone by the sync re-creating last event's rows one cron tick at a time.
+#
+# UPDATE THIS AT EVERY EVENT ROLLOVER, in the same change that rotates
+# SECRET_PARTY_API_KEY. See "Event Rollover Checklist" in PROJECT.md.
+# Jk6YADb6a3 = Room Service '26 (loaded into Secret Party 2026-08-03)
+ACTIVE_EVENT_ID = "Jk6YADb6a3"
+
 # Secrets are set via: wrangler secret put SECRET_NAME
 # Do NOT put real values here — this file is committed to git
 # Required secrets:

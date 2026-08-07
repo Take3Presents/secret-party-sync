@@ -2,10 +2,12 @@
   "name": "secret-party-sync",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "sync": "wrangler dev --test-scheduled"
+    "sync": "wrangler dev --test-scheduled",
+    "test": "node --env-file=.dev.vars test/simulate.mjs"
   },
   "devDependencies": {
     "wrangler": "^3.0.0"

@@ -1,16 +1,26 @@
 import { SP_BASE_URL } from './config.js';
 
 /**
- * Fetch a page of records from the Secret Party API.
- * @param {string} endpoint - 'invitations' or 'tickets'
+ * Fetch records from the Secret Party API.
+ *
+ * Secret Party returns every matching record in one response — there is no
+ * pagination — so with no cursor this is the entire dataset for the event the
+ * API key is scoped to. Rotating the key repoints this at a different event.
+ *
+ * `updated_after` is applied server-side but is inclusive and known to leak a few
+ * older records through, so callers re-filter client-side (see src/cursor.js).
+ *
+ * @param {'invitations'|'tickets'} endpoint
  * @param {string} apiKey
- * @param {string|null} updatedAfter - ISO-8601 cursor from previous sync
- * @returns {{ records: object[], meta: { returned_count: number, next_updated_after: string } }}
+ * @param {string|null} updatedAfter - ISO-8601 timestamp from the stored cursor
+ * @param {import('./budget.js').Budget} budget
+ * @returns {{ records: object[], meta: object }}
  */
-export async function fetchRecords(endpoint, apiKey, updatedAfter = null) {
+export async function fetchRecords(endpoint, apiKey, updatedAfter = null, budget) {
   const url = new URL(`${SP_BASE_URL}/${endpoint}`);
   if (updatedAfter) url.searchParams.set('updated_after', updatedAfter);
 
+  if (budget) budget.spend(1);
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
@@ -20,14 +30,7 @@ export async function fetchRecords(endpoint, apiKey, updatedAfter = null) {
   }
 
   const body = await response.json();
-
-  // The API doc shows meta.returned_count and meta.next_updated_after.
-  // Records are expected to be the top-level array — adjust the key below
-  // if the actual response wraps them differently (e.g. body.data or body.records).
   const records = body.data ?? body.records ?? body[endpoint] ?? [];
 
-  return {
-    records,
-    meta: body.meta,
-  };
+  return { records, meta: body.meta ?? {} };
 }

@@ -4,3 +4,5 @@ dist/
 .dev.vars
 .env
 *.local
+tmp/
+.DS_Store

@@ -9,12 +9,22 @@ export const BASES = {
   syncState: 'appgvcig9jwAhim6W',
 };
 
+// Table names change every event cycle — the team renames tables in place rather
+// than rebuilding the base. The IDs below are stable; the comments are just the
+// name each table happened to have as of August 2026.
 export const TABLES = {
-  addons: 'tblgcN9VlJ4jT5R2h',       // Add-Ons
+  addons: 'tblgcN9VlJ4jT5R2h',       // RS'26 Add-Ons
   invitations: 'tblKgwXnpqWjf8Z8q',  // Invitations
-  tickets: 'tblVGGdO9QrRYi50x',      // BSS'26
+  tickets: 'tblVGGdO9QrRYi50x',      // RS'26 Tix
   syncState: 'tblT06K1k450mZ6q2',    // {{Sync State}}
 };
+
+// ── Subrequest budget ────────────────────────────────────────────────────────
+// Cloudflare's free plan allows 50 outbound fetches per Worker invocation, and
+// every Secret Party and Airtable call spends one. See src/budget.js.
+export const SUBREQUEST_LIMIT = 50;
+export const SUBREQUEST_SAFETY_MARGIN = 2; // headroom for a retry near the edge
+export const UPSERT_BATCH_SIZE = 10;       // Airtable's max records per upsert
 
 // The Airtable field ID used to uniquely identify each SP record (upsert merge key)
 export const MERGE_FIELDS = {
@@ -38,6 +48,8 @@ export const SYNC_STATE_FIELDS = {
   ticketsUpdated:     'fldgkyq5nuTPsU7x3', // Tickets Updated
   addonsCreated:      'fldW9JzB45S6hUvP2', // Add-Ons Created
   addonsUpdated:      'fldC8EK7KrlLNMs4j', // Add-Ons Updated
+  backlogRemaining:   'fldbOreri18UJ4Y0S', // Backlog Remaining
+  skippedOtherEvent:  'fldHMlMO0314lL34K', // Skipped (Other Event)
 };
 
 // Field mapping: Secret Party API field → Airtable field ID
